@@ -2,7 +2,7 @@
 class DB {
 
     private static $host = "localhost";
-    private static $database = "year2project";
+    private static $database = "ems_db";
     private static $username = "root";
     private static $password = "";
     

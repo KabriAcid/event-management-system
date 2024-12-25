@@ -61,7 +61,7 @@ $user = $_SESSION['user'];
                             echo '<td>' . $row['Description'] . '</td>';                    
                             echo '<td>' . $row['StartDate'] . '</td>';
                             echo '<td>' . $row['EndDate'] . '</td>';
-                            echo '<td>' . $row['Cost'] . '</td>';
+                            echo '<td>' . '&#8358;' . number_format($row['Cost'], 2) . '</td>';
                             echo '<td>'
                             . '<a href="viewLocation.php?id='.$row['LocationID'].'">'.$row['name'].'</a> '
                             . '</td>';
