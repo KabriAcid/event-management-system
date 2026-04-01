@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { getDatabase, closeDatabase } from "./db/database";
+import authRoutes from "./routes/authRoutes";
 
 dotenv.config();
 
@@ -25,8 +26,8 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "healthy", timestamp: new Date().toISOString() });
 });
 
-// API Routes (to be implemented)
-// app.use("/api/auth", authRoutes);
+// API Routes
+app.use("/api/auth", authRoutes);
 // app.use("/api/organizer", organizerRoutes);
 // app.use("/api/attendee", attendeeRoutes);
 

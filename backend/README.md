@@ -2,6 +2,12 @@
 
 SQLite backend server for the Event Management System.
 
+## 📚 Documentation
+
+- **[AUTH.md](AUTH.md)** - JWT Login Authentication (detailed testing & examples)
+- **[schema.sql](src/db/schema.sql)** - Database schema
+- **[seeds.ts](src/db/seeds.ts)** - Seed data
+
 ## Setup
 
 1. **Install Dependencies**
