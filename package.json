@@ -4,8 +4,13 @@
   "version": "1.0",
   "type": "module",
   "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "vite",
+    "dev:backend": "cd backend && npm run dev",
     "build": "vite build",
-    "dev": "vite"
+    "build:all": "vite build && cd backend && npm run build",
+    "seed": "cd backend && npm run seed",
+    "install:all": "npm install && cd backend && npm install"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -67,6 +72,7 @@
     "@types/react-dom": "18.3.1",
     "@tailwindcss/vite": "4.1.12",
     "@vitejs/plugin-react": "4.7.0",
+    "concurrently": "^8.2.2",
     "tailwindcss": "4.1.12",
     "vite": "6.3.5"
   },
