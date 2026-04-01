@@ -32,12 +32,6 @@ export function LandingPage({ onGetStarted, onLogin }: LandingPageProps) {
             </div>
             <div className="flex items-center space-x-4">
               <button
-                onClick={onLogin}
-                className="text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors"
-              >
-                Sign In
-              </button>
-              <button
                 onClick={onGetStarted}
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-full font-medium text-sm transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
               >
@@ -67,7 +61,7 @@ export function LandingPage({ onGetStarted, onLogin }: LandingPageProps) {
                 onClick={onGetStarted}
                 className="w-full sm:w-auto px-8 py-4 bg-indigo-600 text-white rounded-full font-bold text-lg hover:bg-indigo-700 transition-all shadow-xl hover:shadow-2xl flex items-center justify-center gap-2"
               >
-                Start for Free <ArrowRight className="w-5 h-5" />
+                Get Started <ArrowRight className="w-5 h-5" />
               </button>
             </div>
           </div>
