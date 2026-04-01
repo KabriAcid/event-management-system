@@ -57,10 +57,34 @@ export const EVENTS = [
 ];
 
 export const STATS = [
-  { label: "Total Revenue", value: "$425,800", icon: DollarSign, trend: "+12.5%", color: "text-green-500" },
-  { label: "Total Attendees", value: "8,245", icon: Users, trend: "+8.2%", color: "text-blue-500" },
-  { label: "Events Hosted", value: "124", icon: Calendar, trend: "+24%", color: "text-purple-500" },
-  { label: "Avg. Ticket Price", value: "$185", icon: TrendingUp, trend: "-2.1%", color: "text-orange-500" },
+  {
+    label: "Total Revenue",
+    value: "₦425,800",
+    icon: DollarSign,
+    trend: "+12.5%",
+    color: "text-green-500",
+  },
+  {
+    label: "Total Attendees",
+    value: "8,245",
+    icon: Users,
+    trend: "+8.2%",
+    color: "text-blue-500",
+  },
+  {
+    label: "Events Hosted",
+    value: "124",
+    icon: Calendar,
+    trend: "+24%",
+    color: "text-purple-500",
+  },
+  {
+    label: "Avg. Ticket Price",
+    value: "₦185",
+    icon: TrendingUp,
+    trend: "-2.1%",
+    color: "text-orange-500",
+  },
 ];
 
 export const ATTENDEES = [
