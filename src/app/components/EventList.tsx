@@ -175,7 +175,7 @@ export function EventList() {
         {filteredEvents.map((event) => (
           <div
             key={event.id}
-            className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow group flex flex-col h-full"
+            className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group flex flex-col h-full"
           >
             <div className="relative h-48 overflow-hidden">
               <img
@@ -228,7 +228,7 @@ export function EventList() {
                 </div>
               </div>
 
-              <div className="mt-5 pt-4 border-t border-gray-100 flex justify-between items-center">
+              <div className="mt-5 pt-4 border-t border-gray-100 flex justify-between items-center relative">
                 <button className="text-sm font-medium text-indigo-600 hover:text-indigo-700">
                   View Details
                 </button>
@@ -239,14 +239,14 @@ export function EventList() {
                       current === event.id ? null : event.id,
                     );
                   }}
-                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors relative z-30"
                 >
                   <MoreVertical className="w-4 h-4" />
                 </button>
 
                 {openActionMenuId === event.id && (
                   <div
-                    className="absolute right-3 bottom-12 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-20 overflow-hidden"
+                    className="absolute right-0 top-full mt-2 w-36 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button

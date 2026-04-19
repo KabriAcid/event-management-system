@@ -110,7 +110,10 @@ export const eventService = {
     return readCreatedEvents().some((event) => event.id === eventId);
   },
 
-  updateCreatedEvent(eventId: string, input: UpdateEventInput): AppEvent | null {
+  updateCreatedEvent(
+    eventId: string,
+    input: UpdateEventInput,
+  ): AppEvent | null {
     const createdEvents = readCreatedEvents();
     const index = createdEvents.findIndex((event) => event.id === eventId);
 
