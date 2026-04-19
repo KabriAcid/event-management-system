@@ -25,6 +25,8 @@ interface CreateEventInput {
   image?: string;
 }
 
+type UpdateEventInput = Partial<CreateEventInput>;
+
 const EVENT_STORAGE_KEY = "eventflow.mock.events.created";
 const DEFAULT_EVENT_IMAGE =
   "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080";
@@ -102,6 +104,50 @@ export const eventService = {
     const currentEvents = readCreatedEvents();
     writeCreatedEvents([nextEvent, ...currentEvents]);
     return nextEvent;
+  },
+
+  isCreatedEvent(eventId: string): boolean {
+    return readCreatedEvents().some((event) => event.id === eventId);
+  },
+
+  updateCreatedEvent(eventId: string, input: UpdateEventInput): AppEvent | null {
+    const createdEvents = readCreatedEvents();
+    const index = createdEvents.findIndex((event) => event.id === eventId);
+
+    if (index < 0) {
+      return null;
+    }
+
+    const currentEvent = createdEvents[index];
+    const updatedEvent: AppEvent = {
+      ...currentEvent,
+      title: input.title?.trim() || currentEvent.title,
+      date: input.date || currentEvent.date,
+      time: input.time || currentEvent.time,
+      location: input.location?.trim() || currentEvent.location,
+      category: input.category || currentEvent.category,
+      image: input.image?.trim() || currentEvent.image,
+      price: typeof input.price === "number" ? input.price : currentEvent.price,
+      description: input.description?.trim() || currentEvent.description,
+    };
+
+    const nextEvents = [...createdEvents];
+    nextEvents[index] = updatedEvent;
+    writeCreatedEvents(nextEvents);
+
+    return updatedEvent;
+  },
+
+  deleteCreatedEvent(eventId: string): boolean {
+    const createdEvents = readCreatedEvents();
+    const nextEvents = createdEvents.filter((event) => event.id !== eventId);
+
+    if (nextEvents.length === createdEvents.length) {
+      return false;
+    }
+
+    writeCreatedEvents(nextEvents);
+    return true;
   },
 
   getCategories(): string[] {
