@@ -12,7 +12,7 @@ import {
 import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { toast } from "sonner";
-import { ticketService } from "../services/ticketService";
+import { ticketService, type TicketMeta } from "../services/ticketService";
 import { type AuthUser } from "../services/authService";
 import { eventService, type AppEvent } from "../services/eventService";
 import { attendeeService } from "../services/attendeeService";
@@ -38,11 +38,28 @@ export function AttendeeDashboard({
   const [events, setEvents] = useState<AppEvent[]>([]);
   const [myTickets, setMyTickets] = useState<AppEvent[]>([]);
   const [selectedTicket, setSelectedTicket] = useState<AppEvent | null>(null);
+  const [ticketMeta, setTicketMeta] = useState<TicketMeta[]>([]);
   const activeTab = controlledTab ?? internalTab;
 
   const getTicketCode = (event: AppEvent) => {
+    const meta = ticketMeta.find((item) => item.eventId === event.id);
+
+    if (meta?.ticketCode) {
+      return meta.ticketCode;
+    }
+
     const shortUser = user.id.slice(-4).toUpperCase();
     return `EVF-${shortUser}-${event.id.toUpperCase()}`;
+  };
+
+  const getPurchasedDate = (eventId: string) => {
+    const meta = ticketMeta.find((item) => item.eventId === eventId);
+
+    if (!meta?.purchasedAt) {
+      return "N/A";
+    }
+
+    return new Date(meta.purchasedAt).toLocaleString();
   };
 
   const toCalendarDate = (event: AppEvent) => {
@@ -129,6 +146,7 @@ export function AttendeeDashboard({
       .getAllEvents()
       .filter((event) => purchasedEventIds.includes(event.id));
     setMyTickets(purchasedEvents);
+    setTicketMeta(ticketService.getTicketMetadata(user.id));
   }, [user.id]);
 
   useEffect(() => {
@@ -164,9 +182,15 @@ export function AttendeeDashboard({
     toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
       loading: "Processing payment...",
       success: () => {
+        const nextTicketCode = `EVF-${user.id.slice(-4).toUpperCase()}-${event.id.toUpperCase()}`;
         const purchasedIds = ticketService.addPurchasedEventId(
           user.id,
           event.id,
+        );
+        const nextMeta = ticketService.upsertTicketMeta(
+          user.id,
+          event.id,
+          nextTicketCode,
         );
         attendeeService.registerTicketPurchase({
           name: user.name,
@@ -178,10 +202,33 @@ export function AttendeeDashboard({
           .getAllEvents()
           .filter((candidate) => purchasedIds.includes(candidate.id));
         setMyTickets(purchasedEvents);
+        setTicketMeta(nextMeta);
         return `Successfully registered for ${event.title}!`;
       },
       error: "Failed to book ticket",
     });
+  };
+
+  const handleCancelTicket = (event: AppEvent) => {
+    const nextIds = ticketService.removePurchasedEventId(user.id, event.id);
+    const nextMeta = ticketService.removeTicketMeta(user.id, event.id);
+    attendeeService.registerTicketCancellation({
+      email: user.email,
+      event: event.title,
+    });
+
+    const purchasedEvents = eventService
+      .getAllEvents()
+      .filter((candidate) => nextIds.includes(candidate.id));
+
+    setMyTickets(purchasedEvents);
+    setTicketMeta(nextMeta);
+
+    if (selectedTicket?.id === event.id) {
+      setSelectedTicket(null);
+    }
+
+    toast.success("Ticket cancelled.");
   };
 
   return (
@@ -443,6 +490,12 @@ export function AttendeeDashboard({
                         >
                           Add to Calendar
                         </button>
+                        <button
+                          onClick={() => handleCancelTicket(event)}
+                          className="px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
+                        >
+                          Cancel Ticket
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -491,12 +544,18 @@ export function AttendeeDashboard({
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                 <div className="rounded-lg border border-gray-200 p-3">
+                  <p className="text-gray-500">Purchased</p>
+                  <p className="font-medium text-gray-900 mt-1">
+                    {getPurchasedDate(selectedTicket.id)}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-gray-200 p-3">
                   <p className="text-gray-500">Date & Time</p>
                   <p className="font-medium text-gray-900 mt-1">
                     {selectedTicket.date} at {selectedTicket.time}
                   </p>
                 </div>
-                <div className="rounded-lg border border-gray-200 p-3">
+                <div className="rounded-lg border border-gray-200 p-3 sm:col-span-2">
                   <p className="text-gray-500">Location</p>
                   <p className="font-medium text-gray-900 mt-1">
                     {selectedTicket.location}
@@ -526,6 +585,12 @@ export function AttendeeDashboard({
                   className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
                 >
                   Close
+                </button>
+                <button
+                  onClick={() => handleCancelTicket(selectedTicket)}
+                  className="px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
+                >
+                  Cancel Ticket
                 </button>
               </div>
             </div>

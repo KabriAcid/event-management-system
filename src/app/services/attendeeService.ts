@@ -32,6 +32,11 @@ interface RegisterTicketPurchaseInput {
   date: string;
 }
 
+interface CancelTicketPurchaseInput {
+  email: string;
+  event: string;
+}
+
 const ATTENDEE_STORAGE_KEY = "eventflow.mock.attendees";
 
 const safeParseAttendees = (value: string | null): AppAttendee[] => {
@@ -166,6 +171,26 @@ export const attendeeService = {
       status: "Confirmed",
       date: input.date,
     });
+  },
+
+  registerTicketCancellation(input: CancelTicketPurchaseInput): AppAttendee[] {
+    const attendees = readAttendees();
+    const normalizedEmail = input.email.trim().toLowerCase();
+    const normalizedEvent = input.event.trim().toLowerCase();
+
+    const nextAttendees = attendees.map((attendee) => {
+      if (
+        attendee.email.trim().toLowerCase() === normalizedEmail &&
+        attendee.event.trim().toLowerCase() === normalizedEvent
+      ) {
+        return { ...attendee, status: "Cancelled" as AttendeeStatus };
+      }
+
+      return attendee;
+    });
+
+    writeAttendees(nextAttendees);
+    return nextAttendees;
   },
 
   removeAttendee(id: number): AppAttendee[] {
