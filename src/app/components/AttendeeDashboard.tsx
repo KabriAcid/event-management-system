@@ -3,20 +3,19 @@ import {
   Search,
   Calendar,
   MapPin,
-  Tag,
   Heart,
   Ticket,
-  Clock,
   LogOut,
-  User,
   CheckCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { toast } from "sonner";
+import { ticketService } from "../services/ticketService";
+import { type AuthUser } from "../services/authService";
 
 interface AttendeeDashboardProps {
-  user: { name: string; role: string };
+  user: AuthUser;
   onLogout: () => void;
 }
 
@@ -26,7 +25,15 @@ export function AttendeeDashboard({ user, onLogout }: AttendeeDashboardProps) {
   );
   const [searchTerm, setSearchTerm] = useState("");
   const [likedEvents, setLikedEvents] = useState<string[]>([]);
-  const [myTickets, setMyTickets] = useState(EVENTS.slice(0, 2)); // Mock: User has tickets for first 2 events
+  const [myTickets, setMyTickets] = useState<(typeof EVENTS)[0][]>([]);
+
+  useEffect(() => {
+    const purchasedEventIds = ticketService.getPurchasedEventIds(user.id);
+    const purchasedEvents = EVENTS.filter((event) =>
+      purchasedEventIds.includes(event.id),
+    );
+    setMyTickets(purchasedEvents);
+  }, [user.id]);
 
   const filteredEvents = EVENTS.filter(
     (event) =>
@@ -56,7 +63,14 @@ export function AttendeeDashboard({ user, onLogout }: AttendeeDashboardProps) {
     toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
       loading: "Processing payment...",
       success: () => {
-        setMyTickets([...myTickets, event]);
+        const purchasedIds = ticketService.addPurchasedEventId(
+          user.id,
+          event.id,
+        );
+        const purchasedEvents = EVENTS.filter((candidate) =>
+          purchasedIds.includes(candidate.id),
+        );
+        setMyTickets(purchasedEvents);
         return `Successfully registered for ${event.title}!`;
       },
       error: "Failed to book ticket",
