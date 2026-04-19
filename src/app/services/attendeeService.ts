@@ -15,6 +15,16 @@ export interface AppAttendee {
   date: string;
 }
 
+interface CreateAttendeeInput {
+  name: string;
+  email: string;
+  event: string;
+  status: AttendeeStatus;
+  date: string;
+}
+
+type UpdateAttendeeInput = Partial<CreateAttendeeInput>;
+
 const ATTENDEE_STORAGE_KEY = "eventflow.mock.attendees";
 
 const safeParseAttendees = (value: string | null): AppAttendee[] => {
@@ -48,6 +58,12 @@ const writeAttendees = (attendees: AppAttendee[]) => {
   localStorage.setItem(ATTENDEE_STORAGE_KEY, JSON.stringify(attendees));
 };
 
+const nextAttendeeId = (attendees: AppAttendee[]): number => {
+  return (
+    attendees.reduce((maxId, attendee) => Math.max(maxId, attendee.id), 0) + 1
+  );
+};
+
 const readAttendees = (): AppAttendee[] => {
   const fromStorage = safeParseAttendees(
     localStorage.getItem(ATTENDEE_STORAGE_KEY),
@@ -71,6 +87,42 @@ export const attendeeService = {
     const nextAttendees = readAttendees().map((attendee) =>
       attendee.id === id ? { ...attendee, status } : attendee,
     );
+
+    writeAttendees(nextAttendees);
+    return nextAttendees;
+  },
+
+  createAttendee(input: CreateAttendeeInput): AppAttendee[] {
+    const attendees = readAttendees();
+    const attendee: AppAttendee = {
+      id: nextAttendeeId(attendees),
+      name: input.name.trim(),
+      email: input.email.trim().toLowerCase(),
+      event: input.event.trim(),
+      status: input.status,
+      date: input.date,
+    };
+
+    const nextAttendees = [attendee, ...attendees];
+    writeAttendees(nextAttendees);
+    return nextAttendees;
+  },
+
+  updateAttendee(id: number, input: UpdateAttendeeInput): AppAttendee[] {
+    const nextAttendees = readAttendees().map((attendee) => {
+      if (attendee.id !== id) {
+        return attendee;
+      }
+
+      return {
+        ...attendee,
+        name: input.name?.trim() || attendee.name,
+        email: input.email?.trim().toLowerCase() || attendee.email,
+        event: input.event?.trim() || attendee.event,
+        status: input.status || attendee.status,
+        date: input.date || attendee.date,
+      };
+    });
 
     writeAttendees(nextAttendees);
     return nextAttendees;

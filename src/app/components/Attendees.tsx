@@ -11,6 +11,8 @@ import {
   Pencil,
   Trash2,
   UserCog,
+  Plus,
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -19,6 +21,15 @@ import {
   type AppAttendee,
   type AttendeeStatus,
 } from "../services/attendeeService";
+import { eventService } from "../services/eventService";
+
+const defaultAttendeeForm = {
+  name: "",
+  email: "",
+  event: "",
+  status: "Confirmed" as AttendeeStatus,
+  date: new Date().toISOString().slice(0, 10),
+};
 
 export function Attendees() {
   const [attendees, setAttendees] = useState<AppAttendee[]>([]);
@@ -27,6 +38,13 @@ export function Attendees() {
     "All",
   );
   const [openActionMenuId, setOpenActionMenuId] = useState<number | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingAttendeeId, setEditingAttendeeId] = useState<number | null>(
+    null,
+  );
+  const [attendeeForm, setAttendeeForm] = useState(defaultAttendeeForm);
+
+  const eventOptions = eventService.getAllEvents().map((event) => event.title);
 
   useEffect(() => {
     setAttendees(attendeeService.getAttendees());
@@ -53,6 +71,68 @@ export function Attendees() {
     const nextAttendees = attendeeService.updateStatus(id, status);
     setAttendees(nextAttendees);
     toast.success(`Attendee marked as ${status}.`);
+  };
+
+  const openCreateForm = () => {
+    setEditingAttendeeId(null);
+    setAttendeeForm({
+      ...defaultAttendeeForm,
+      event: eventOptions[0] ?? "",
+    });
+    setIsFormOpen(true);
+  };
+
+  const openEditForm = (attendee: AppAttendee) => {
+    setEditingAttendeeId(attendee.id);
+    setAttendeeForm({
+      name: attendee.name,
+      email: attendee.email,
+      event: attendee.event,
+      status: attendee.status,
+      date: attendee.date,
+    });
+    setIsFormOpen(true);
+  };
+
+  const closeForm = () => {
+    setIsFormOpen(false);
+    setEditingAttendeeId(null);
+  };
+
+  const handleSubmitAttendee = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!attendeeForm.event.trim()) {
+      toast.error("Please select or provide an event.");
+      return;
+    }
+
+    const duplicateEmail = attendees.some(
+      (attendee) =>
+        attendee.email.toLowerCase() === attendeeForm.email.toLowerCase() &&
+        attendee.id !== editingAttendeeId,
+    );
+
+    if (duplicateEmail) {
+      toast.error("An attendee with this email already exists.");
+      return;
+    }
+
+    if (editingAttendeeId) {
+      const nextAttendees = attendeeService.updateAttendee(
+        editingAttendeeId,
+        attendeeForm,
+      );
+      setAttendees(nextAttendees);
+      toast.success("Attendee updated.");
+      closeForm();
+      return;
+    }
+
+    const nextAttendees = attendeeService.createAttendee(attendeeForm);
+    setAttendees(nextAttendees);
+    toast.success("Attendee created.");
+    closeForm();
   };
 
   const handleRemove = (id: number) => {
@@ -113,13 +193,22 @@ export function Attendees() {
             Manage registrations and guest lists.
           </p>
         </div>
-        <button
-          onClick={handleExportCsv}
-          className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
-        >
-          <Download className="w-4 h-4" />
-          <span>Export CSV</span>
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={openCreateForm}
+            className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Attendee</span>
+          </button>
+          <button
+            onClick={handleExportCsv}
+            className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export CSV</span>
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
@@ -235,6 +324,16 @@ export function Attendees() {
                           <button
                             onClick={() => {
                               setOpenActionMenuId(null);
+                              openEditForm(attendee);
+                            }}
+                            className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                          >
+                            <Pencil className="w-4 h-4 mr-2" />
+                            Edit Details
+                          </button>
+                          <button
+                            onClick={() => {
+                              setOpenActionMenuId(null);
                               handleStatusChange(attendee.id, "Confirmed");
                             }}
                             className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
@@ -290,6 +389,140 @@ export function Attendees() {
           </div>
         )}
       </div>
+
+      {isFormOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={closeForm}
+          />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 className="font-bold text-lg text-gray-900">
+                {editingAttendeeId ? "Edit Attendee" : "Add Attendee"}
+              </h3>
+              <button
+                onClick={closeForm}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitAttendee} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Full Name
+                </label>
+                <input
+                  required
+                  minLength={2}
+                  type="text"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  value={attendeeForm.name}
+                  onChange={(e) =>
+                    setAttendeeForm({ ...attendeeForm, name: e.target.value })
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  required
+                  type="email"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  value={attendeeForm.email}
+                  onChange={(e) =>
+                    setAttendeeForm({ ...attendeeForm, email: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Event
+                  </label>
+                  <select
+                    required
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={attendeeForm.event}
+                    onChange={(e) =>
+                      setAttendeeForm({
+                        ...attendeeForm,
+                        event: e.target.value,
+                      })
+                    }
+                  >
+                    {eventOptions.length === 0 && (
+                      <option value="">No events available</option>
+                    )}
+                    {eventOptions.map((eventTitle) => (
+                      <option key={eventTitle} value={eventTitle}>
+                        {eventTitle}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={attendeeForm.status}
+                    onChange={(e) =>
+                      setAttendeeForm({
+                        ...attendeeForm,
+                        status: e.target.value as AttendeeStatus,
+                      })
+                    }
+                  >
+                    <option value="Confirmed">Confirmed</option>
+                    <option value="Checked In">Checked In</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Registration Date
+                </label>
+                <input
+                  required
+                  type="date"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  value={attendeeForm.date}
+                  onChange={(e) =>
+                    setAttendeeForm({ ...attendeeForm, date: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={closeForm}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors shadow-sm"
+                >
+                  {editingAttendeeId ? "Save Changes" : "Create Attendee"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
