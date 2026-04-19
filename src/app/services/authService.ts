@@ -54,6 +54,7 @@ interface RegisterInput {
 
 const SESSION_STORAGE_KEY = "eventflow.mock.auth.session";
 const USER_STORAGE_KEY = "eventflow.mock.auth.users";
+const PASSWORD_OVERRIDE_STORAGE_KEY = "eventflow.mock.auth.password.overrides";
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const DEFAULT_USERS: StoredMockUser[] = [
@@ -101,6 +102,20 @@ const writeCustomUsers = (users: StoredMockUser[]) => {
   localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(users));
 };
 
+const readPasswordOverrides = (): Record<string, string> => {
+  return safeJsonParse<Record<string, string>>(
+    localStorage.getItem(PASSWORD_OVERRIDE_STORAGE_KEY),
+    {},
+  );
+};
+
+const writePasswordOverrides = (overrides: Record<string, string>) => {
+  localStorage.setItem(
+    PASSWORD_OVERRIDE_STORAGE_KEY,
+    JSON.stringify(overrides),
+  );
+};
+
 const readSession = (): AuthSession | null => {
   return safeJsonParse<AuthSession | null>(
     localStorage.getItem(SESSION_STORAGE_KEY),
@@ -123,6 +138,19 @@ const toPublicUser = (user: StoredMockUser): AuthUser => {
 
 const allUsers = (): StoredMockUser[] => {
   return [...DEFAULT_USERS, ...readCustomUsers()];
+};
+
+const resolvePassword = (user: StoredMockUser): string => {
+  const overrides = readPasswordOverrides();
+  const normalizedEmail = user.email.toLowerCase();
+  return overrides[normalizedEmail] ?? user.password;
+};
+
+const isDefaultUser = (user: StoredMockUser): boolean => {
+  return DEFAULT_USERS.some(
+    (defaultUser) =>
+      defaultUser.email.toLowerCase() === user.email.toLowerCase(),
+  );
 };
 
 const createSession = (user: AuthUser): AuthSession => {
@@ -152,7 +180,7 @@ export const authService = {
       );
     }
 
-    if (userByEmail.password !== input.password) {
+    if (resolvePassword(userByEmail) !== input.password) {
       throw new AuthServiceError("INVALID_PASSWORD", "Incorrect password.");
     }
 
@@ -228,5 +256,61 @@ export const authService = {
     );
 
     return user?.role ?? null;
+  },
+
+  updateCurrentUserPassword(
+    currentPassword: string,
+    newPassword: string,
+  ): void {
+    const session = readSession();
+
+    if (!session?.user?.email) {
+      throw new AuthServiceError(
+        "ACCOUNT_NOT_FOUND",
+        "No active session found.",
+      );
+    }
+
+    const normalizedEmail = session.user.email.toLowerCase();
+    const user = allUsers().find(
+      (candidate) => candidate.email.toLowerCase() === normalizedEmail,
+    );
+
+    if (!user) {
+      throw new AuthServiceError(
+        "ACCOUNT_NOT_FOUND",
+        "Could not locate this account.",
+      );
+    }
+
+    if (resolvePassword(user) !== currentPassword) {
+      throw new AuthServiceError(
+        "INVALID_PASSWORD",
+        "Current password is incorrect.",
+      );
+    }
+
+    if (isDefaultUser(user)) {
+      const overrides = readPasswordOverrides();
+      overrides[normalizedEmail] = newPassword;
+      writePasswordOverrides(overrides);
+      return;
+    }
+
+    const customUsers = readCustomUsers();
+    const index = customUsers.findIndex(
+      (candidate) => candidate.email.toLowerCase() === normalizedEmail,
+    );
+
+    if (index < 0) {
+      throw new AuthServiceError(
+        "ACCOUNT_NOT_FOUND",
+        "Could not update password for this account.",
+      );
+    }
+
+    const nextUsers = [...customUsers];
+    nextUsers[index] = { ...nextUsers[index], password: newPassword };
+    writeCustomUsers(nextUsers);
   },
 };
