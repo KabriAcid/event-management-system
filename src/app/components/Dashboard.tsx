@@ -1,7 +1,9 @@
 
-import { STATS, EVENTS } from "../data/mockData";
+import { STATS } from "../data/mockData";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Calendar, Clock, MapPin } from "lucide-react";
+import { useEffect, useState } from "react";
+import { eventService, type AppEvent } from "../services/eventService";
 
 const data = [
   { name: 'Jan', revenue: 4000 },
@@ -14,6 +16,12 @@ const data = [
 ];
 
 export function Dashboard() {
+  const [events, setEvents] = useState<AppEvent[]>([]);
+
+  useEffect(() => {
+    setEvents(eventService.getAllEvents());
+  }, []);
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
@@ -112,7 +120,7 @@ export function Dashboard() {
             Upcoming Events
           </h2>
           <div className="space-y-4">
-            {EVENTS.slice(0, 3).map((event) => (
+            {events.slice(0, 3).map((event) => (
               <div
                 key={event.id}
                 className="flex gap-4 p-3 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer group"

@@ -1,4 +1,3 @@
-import { EVENTS } from "../data/mockData";
 import {
   Search,
   Calendar,
@@ -13,29 +12,52 @@ import clsx from "clsx";
 import { toast } from "sonner";
 import { ticketService } from "../services/ticketService";
 import { type AuthUser } from "../services/authService";
+import { eventService, type AppEvent } from "../services/eventService";
 
 interface AttendeeDashboardProps {
   user: AuthUser;
   onLogout: () => void;
+  activeTab?: "discover" | "tickets";
+  onTabChange?: (tab: "discover" | "tickets") => void;
 }
 
-export function AttendeeDashboard({ user, onLogout }: AttendeeDashboardProps) {
-  const [activeTab, setActiveTab] = useState<"discover" | "tickets">(
+export function AttendeeDashboard({
+  user,
+  onLogout,
+  activeTab: controlledTab,
+  onTabChange,
+}: AttendeeDashboardProps) {
+  const [internalTab, setInternalTab] = useState<"discover" | "tickets">(
     "discover",
   );
   const [searchTerm, setSearchTerm] = useState("");
   const [likedEvents, setLikedEvents] = useState<string[]>([]);
-  const [myTickets, setMyTickets] = useState<(typeof EVENTS)[0][]>([]);
+  const [events, setEvents] = useState<AppEvent[]>([]);
+  const [myTickets, setMyTickets] = useState<AppEvent[]>([]);
+  const activeTab = controlledTab ?? internalTab;
+
+  const switchTab = (tab: "discover" | "tickets") => {
+    if (onTabChange) {
+      onTabChange(tab);
+      return;
+    }
+
+    setInternalTab(tab);
+  };
+
+  useEffect(() => {
+    setEvents(eventService.getAllEvents());
+  }, []);
 
   useEffect(() => {
     const purchasedEventIds = ticketService.getPurchasedEventIds(user.id);
-    const purchasedEvents = EVENTS.filter((event) =>
+    const purchasedEvents = eventService.getAllEvents().filter((event) =>
       purchasedEventIds.includes(event.id),
     );
     setMyTickets(purchasedEvents);
   }, [user.id]);
 
-  const filteredEvents = EVENTS.filter(
+  const filteredEvents = events.filter(
     (event) =>
       event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       event.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -52,10 +74,10 @@ export function AttendeeDashboard({ user, onLogout }: AttendeeDashboardProps) {
     }
   };
 
-  const handleBuyTicket = (event: (typeof EVENTS)[0]) => {
+  const handleBuyTicket = (event: AppEvent) => {
     if (myTickets.some((t) => t.id === event.id)) {
       toast.error("You already have a ticket for this event!");
-      setActiveTab("tickets");
+      switchTab("tickets");
       return;
     }
 
@@ -67,7 +89,7 @@ export function AttendeeDashboard({ user, onLogout }: AttendeeDashboardProps) {
           user.id,
           event.id,
         );
-        const purchasedEvents = EVENTS.filter((candidate) =>
+        const purchasedEvents = eventService.getAllEvents().filter((candidate) =>
           purchasedIds.includes(candidate.id),
         );
         setMyTickets(purchasedEvents);
@@ -92,7 +114,7 @@ export function AttendeeDashboard({ user, onLogout }: AttendeeDashboardProps) {
 
             <div className="hidden md:flex items-center space-x-8">
               <button
-                onClick={() => setActiveTab("discover")}
+                onClick={() => switchTab("discover")}
                 className={clsx(
                   "text-sm font-medium transition-colors relative py-5",
                   activeTab === "discover"
@@ -106,7 +128,7 @@ export function AttendeeDashboard({ user, onLogout }: AttendeeDashboardProps) {
                 )}
               </button>
               <button
-                onClick={() => setActiveTab("tickets")}
+                onClick={() => switchTab("tickets")}
                 className={clsx(
                   "text-sm font-medium transition-colors relative py-5",
                   activeTab === "tickets"
@@ -282,7 +304,7 @@ export function AttendeeDashboard({ user, onLogout }: AttendeeDashboardProps) {
                   Browse events and book your first experience!
                 </p>
                 <button
-                  onClick={() => setActiveTab("discover")}
+                  onClick={() => switchTab("discover")}
                   className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
                 >
                   Browse Events

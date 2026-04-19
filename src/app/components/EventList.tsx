@@ -1,62 +1,23 @@
-import { EVENTS } from "../data/mockData";
 import {
   Search,
-  Filter,
   MoreVertical,
   Calendar,
   MapPin,
   Users,
-  Tag,
   Plus,
-  X,
-  Image as ImageIcon,
 } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { eventService, type AppEvent } from "../services/eventService";
 
 export function EventList() {
-  const [events, setEvents] = useState(EVENTS);
+  const [events, setEvents] = useState<AppEvent[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("All");
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  // New Event State
-  const [newEvent, setNewEvent] = useState({
-    title: "",
-    date: "",
-    time: "",
-    location: "",
-    category: "Technology",
-    price: "",
-    description: "",
-  });
-
-  const handleCreateEvent = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const createdEvent = {
-      id: Math.random().toString(36).substr(2, 9),
-      ...newEvent,
-      attendees: 0,
-      image:
-        "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHGV2ZW50fGVufDF8fHx8MTc3MDI2OTczOXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral", // Placeholder
-      status: "Upcoming",
-      price: Number(newEvent.price),
-    };
-
-    setEvents([createdEvent, ...events]);
-    setIsCreateModalOpen(false);
-    setNewEvent({
-      title: "",
-      date: "",
-      time: "",
-      location: "",
-      category: "Technology",
-      price: "",
-      description: "",
-    });
-    toast.success("Event created successfully!");
-  };
+  useEffect(() => {
+    setEvents(eventService.getAllEvents());
+  }, []);
 
   const filteredEvents = events.filter((event) => {
     const matchesSearch =
@@ -67,7 +28,7 @@ export function EventList() {
     return matchesSearch && matchesCategory;
   });
 
-  const categories = ["All", ...new Set(EVENTS.map((e) => e.category))];
+  const categories = ["All", ...new Set(events.map((event) => event.category))];
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 relative">
@@ -79,13 +40,13 @@ export function EventList() {
           </p>
         </div>
         <div className="flex gap-3">
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
+          <Link
+            to="/organizer/events/create"
             className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center"
           >
             <Plus className="w-4 h-4 mr-2" />
             Create Event
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -196,166 +157,6 @@ export function EventList() {
           <p className="text-gray-500 mt-1">
             Try adjusting your search or filters.
           </p>
-        </div>
-      )}
-
-      {/* Create Event Modal */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-            onClick={() => setIsCreateModalOpen(false)}
-          ></div>
-          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="font-bold text-lg text-gray-900">
-                Create New Event
-              </h3>
-              <button
-                onClick={() => setIsCreateModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateEvent} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Event Title
-                </label>
-                <input
-                  required
-                  type="text"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="e.g. Annual Tech Conference"
-                  value={newEvent.title}
-                  onChange={(e) =>
-                    setNewEvent({ ...newEvent, title: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Date
-                  </label>
-                  <input
-                    required
-                    type="date"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    value={newEvent.date}
-                    onChange={(e) =>
-                      setNewEvent({ ...newEvent, date: e.target.value })
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Time
-                  </label>
-                  <input
-                    required
-                    type="time"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    value={newEvent.time}
-                    onChange={(e) =>
-                      setNewEvent({ ...newEvent, time: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Location
-                </label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                  <input
-                    required
-                    type="text"
-                    className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="e.g. San Francisco, CA"
-                    value={newEvent.location}
-                    onChange={(e) =>
-                      setNewEvent({ ...newEvent, location: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category
-                  </label>
-                  <select
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    value={newEvent.category}
-                    onChange={(e) =>
-                      setNewEvent({ ...newEvent, category: e.target.value })
-                    }
-                  >
-                    {categories
-                      .filter((c) => c !== "All")
-                      .map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Price (₦)
-                  </label>
-                  <input
-                    required
-                    type="number"
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="0"
-                    value={newEvent.price}
-                    onChange={(e) =>
-                      setNewEvent({ ...newEvent, price: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Describe your event..."
-                  value={newEvent.description}
-                  onChange={(e) =>
-                    setNewEvent({ ...newEvent, description: e.target.value })
-                  }
-                />
-              </div>
-
-              <div className="pt-2 flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors shadow-sm"
-                >
-                  Create Event
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
     </div>
