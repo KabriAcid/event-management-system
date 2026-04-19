@@ -64,7 +64,9 @@ export function AttendeeDashboard({
       return new Date(`${datePart}T${String(hours).padStart(2, "0")}:${m}:00`);
     }
 
-    return new Date(`${datePart}T${timePart.length === 5 ? `${timePart}:00` : timePart}`);
+    return new Date(
+      `${datePart}T${timePart.length === 5 ? `${timePart}:00` : timePart}`,
+    );
   };
 
   const formatIcsUtc = (date: Date) => {
@@ -479,7 +481,9 @@ export function AttendeeDashboard({
               </div>
 
               <div>
-                <h4 className="text-2xl font-bold text-gray-900">{selectedTicket.title}</h4>
+                <h4 className="text-2xl font-bold text-gray-900">
+                  {selectedTicket.title}
+                </h4>
                 <p className="text-sm text-gray-500 mt-1">
                   Holder: {user.name} ({user.email})
                 </p>
@@ -494,7 +498,9 @@ export function AttendeeDashboard({
                 </div>
                 <div className="rounded-lg border border-gray-200 p-3">
                   <p className="text-gray-500">Location</p>
-                  <p className="font-medium text-gray-900 mt-1">{selectedTicket.location}</p>
+                  <p className="font-medium text-gray-900 mt-1">
+                    {selectedTicket.location}
+                  </p>
                 </div>
               </div>
 
