@@ -8,7 +8,8 @@ import {
   MapPin,
   Clock,
 } from "lucide-react";
-import { EVENTS } from "../data/mockData";
+import { useEffect, useState } from "react";
+import { eventService, type AppEvent } from "../services/eventService";
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -16,7 +17,16 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onGetStarted, onLogin }: LandingPageProps) {
-  const upcomingEvents = EVENTS.slice(0, 3);
+  const [upcomingEvents, setUpcomingEvents] = useState<AppEvent[]>([]);
+
+  useEffect(() => {
+    const events = eventService
+      .getAllEvents()
+      .filter((event) => event.status === "Upcoming")
+      .slice(0, 3);
+
+    setUpcomingEvents(events);
+  }, []);
 
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900">
@@ -139,6 +149,12 @@ export function LandingPage({ onGetStarted, onLogin }: LandingPageProps) {
                 </div>
               </div>
             ))}
+
+            {upcomingEvents.length === 0 && (
+              <div className="md:col-span-3 text-center py-12 border border-dashed border-gray-200 rounded-2xl">
+                <p className="text-gray-500">No upcoming events yet.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
