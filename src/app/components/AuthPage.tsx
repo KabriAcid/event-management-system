@@ -2,25 +2,49 @@
 import { useState } from "react";
 import { User, Calendar, ArrowLeft, Mail, Lock, UserCircle } from "lucide-react";
 import clsx from "clsx";
+import { toast } from "sonner";
+import { authService, type AuthUser, type UserRole } from "../services/authService";
 
 interface AuthPageProps {
-  onLogin: (role: 'organizer' | 'attendee', name: string) => void;
+  onLogin: (user: AuthUser) => void;
   onBack: () => void;
 }
 
 export function AuthPage({ onLogin, onBack }: AuthPageProps) {
   const [isLogin, setIsLogin] = useState(true);
-  const [role, setRole] = useState<'organizer' | 'attendee'>('organizer');
+  const [role, setRole] = useState<UserRole>("organizer");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate auth delay
-    setTimeout(() => {
-      onLogin(role, name || (role === 'organizer' ? 'Event Organizer' : 'Happy Attendee'));
-    }, 800);
+
+    setIsSubmitting(true);
+
+    try {
+      if (isLogin) {
+        const session = await authService.login({ email, password, role });
+        toast.success(`Welcome back, ${session.user.name}!`);
+        onLogin(session.user);
+      } else {
+        const session = await authService.register({
+          name: name.trim(),
+          email,
+          password,
+          role,
+        });
+        toast.success("Account created successfully.");
+        onLogin(session.user);
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unable to authenticate. Please try again.";
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -78,6 +102,7 @@ export function AuthPage({ onLogin, onBack }: AuthPageProps) {
                   <input
                     type="text"
                     required
+                    minLength={2}
                     className="block w-full pl-10 sm:text-sm border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 py-2 border"
                     placeholder="John Doe"
                     value={name}
@@ -113,6 +138,7 @@ export function AuthPage({ onLogin, onBack }: AuthPageProps) {
                 <input
                   type="password"
                   required
+                  minLength={6}
                   className="block w-full pl-10 sm:text-sm border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 py-2 border"
                   placeholder="••••••••"
                   value={password}
@@ -124,12 +150,21 @@ export function AuthPage({ onLogin, onBack }: AuthPageProps) {
             <div>
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
               >
-                {isLogin ? "Sign in" : "Create account"}
+                {isSubmitting ? "Please wait..." : isLogin ? "Sign in" : "Create account"}
               </button>
             </div>
           </form>
+
+          {isLogin && (
+            <div className="mt-4 rounded-md bg-indigo-50 border border-indigo-100 p-3 text-xs text-indigo-900">
+              <p className="font-semibold">Demo login credentials</p>
+              <p>Organizer: organizer@eventflow.demo / demo123</p>
+              <p>Attendee: attendee@eventflow.demo / demo123</p>
+            </div>
+          )}
 
           <div className="mt-6">
             <button

@@ -4,13 +4,9 @@
   "version": "1.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
-    "dev:frontend": "vite",
-    "dev:backend": "cd backend && npm run dev",
+    "dev": "vite",
     "build": "vite build",
-    "build:all": "vite build && cd backend && npm run build",
-    "seed": "cd backend && npm run seed",
-    "install:all": "npm install && cd backend && npm install"
+    "seed": "cd backend && npm run seed"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

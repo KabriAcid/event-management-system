@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { Dashboard } from "./components/Dashboard";
 import { EventList } from "./components/EventList";
@@ -10,31 +10,36 @@ import { AuthPage } from "./components/AuthPage";
 import { AttendeeDashboard } from "./components/AttendeeDashboard";
 import { Menu, Calendar } from "lucide-react";
 import { Toaster } from "sonner";
-
-type UserRole = 'organizer' | 'attendee';
-
-interface User {
-  name: string;
-  role: UserRole;
-}
+import { authService, type AuthUser } from "./services/authService";
 
 export default function App() {
   const [view, setView] = useState<'landing' | 'auth' | 'app'>('landing');
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   
   // Organizer State
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleLogin = (role: UserRole, name: string) => {
-    setUser({ name, role });
+  useEffect(() => {
+    const session = authService.getCurrentSession();
+
+    if (session?.user) {
+      setUser(session.user);
+      setView("app");
+    }
+  }, []);
+
+  const handleLogin = (nextUser: AuthUser) => {
+    setUser(nextUser);
     setView('app');
   };
 
   const handleLogout = () => {
+    authService.logout();
     setUser(null);
     setView('landing');
     setActiveTab("dashboard");
+    setIsMobileMenuOpen(false);
   };
 
   const renderOrganizerContent = () => {

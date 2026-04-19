@@ -21,3 +21,6 @@ This project uses React (Typescript) as the frontend and PHP as the backend. The
 - Remove all unnecessary nav links in footer since this is a final year project not real-live.
 - Add some nice font-face.
 - A detailed document entailing the contents of the project so that the documentation should match.
+
+-------------
+I've got a new idea, since this is a final-year project and mostly the supervisor dosen't focus on the software but rather the documentation, then we need to do some cheats that seem realistic to the end-user i.e We don't need backend totally in this project. We utilize and rely on the browser localStorage while we create some sample demo .php backend files since the requisites are Javascript + PHP as backend. Now in the /backend folder I might need some backend corresponding files but for only few CRUD tasks like event creation, registeration, and authentication e.t.c that may not be fully standard or complete. I hope you understand my point.
