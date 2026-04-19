@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { Dashboard } from "./components/Dashboard";
@@ -13,9 +12,9 @@ import { Toaster } from "sonner";
 import { authService, type AuthUser } from "./services/authService";
 
 export default function App() {
-  const [view, setView] = useState<'landing' | 'auth' | 'app'>('landing');
+  const [view, setView] = useState<"landing" | "auth" | "app">("landing");
   const [user, setUser] = useState<AuthUser | null>(null);
-  
+
   // Organizer State
   const [activeTab, setActiveTab] = useState("dashboard");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -31,37 +30,49 @@ export default function App() {
 
   const handleLogin = (nextUser: AuthUser) => {
     setUser(nextUser);
-    setView('app');
+    setView("app");
   };
 
   const handleLogout = () => {
     authService.logout();
     setUser(null);
-    setView('landing');
+    setView("landing");
     setActiveTab("dashboard");
     setIsMobileMenuOpen(false);
   };
 
   const renderOrganizerContent = () => {
     switch (activeTab) {
-      case "dashboard": return <Dashboard />;
-      case "events": return <EventList />;
-      case "attendees": return <Attendees />;
-      case "settings": return <Settings />;
-      default: return <Dashboard />;
+      case "dashboard":
+        return <Dashboard />;
+      case "events":
+        return <EventList />;
+      case "attendees":
+        return <Attendees />;
+      case "settings":
+        return <Settings />;
+      default:
+        return <Dashboard />;
     }
   };
 
   const renderContent = () => {
-    if (view === 'landing') {
-      return <LandingPage onGetStarted={() => setView('auth')} onLogin={() => setView('auth')} />;
+    if (view === "landing") {
+      return (
+        <LandingPage
+          onGetStarted={() => setView("auth")}
+          onLogin={() => setView("auth")}
+        />
+      );
     }
 
-    if (view === 'auth') {
-      return <AuthPage onLogin={handleLogin} onBack={() => setView('landing')} />;
+    if (view === "auth") {
+      return (
+        <AuthPage onLogin={handleLogin} onBack={() => setView("landing")} />
+      );
     }
 
-    if (user?.role === 'attendee') {
+    if (user?.role === "attendee") {
       return <AttendeeDashboard user={user} onLogout={handleLogout} />;
     }
 
@@ -70,18 +81,25 @@ export default function App() {
       <div className="min-h-screen bg-gray-50 flex font-sans text-gray-900">
         {/* Sidebar for Desktop */}
         <div className="hidden md:block fixed left-0 top-0 bottom-0 w-64 z-10 shadow-sm">
-          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onLogout={handleLogout} />
+          <Sidebar
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            onLogout={handleLogout}
+          />
         </div>
 
         {/* Mobile Header */}
         <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 p-4 z-20 flex items-center justify-between">
           <div className="flex items-center space-x-2">
-             <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
               <Calendar className="text-white w-5 h-5" />
             </div>
             <span className="text-xl font-bold text-gray-900">EventFlow</span>
           </div>
-          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-gray-600">
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2 text-gray-600"
+          >
             <Menu className="w-6 h-6" />
           </button>
         </div>
@@ -89,9 +107,19 @@ export default function App() {
         {/* Mobile Sidebar Overlay */}
         {isMobileMenuOpen && (
           <div className="fixed inset-0 z-30 md:hidden">
-            <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
+            <div
+              className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
             <div className="absolute top-0 bottom-0 left-0 w-64 bg-white shadow-xl animate-in slide-in-from-left duration-300">
-               <Sidebar activeTab={activeTab} setActiveTab={(tab) => { setActiveTab(tab); setIsMobileMenuOpen(false); }} onLogout={handleLogout} />
+              <Sidebar
+                activeTab={activeTab}
+                setActiveTab={(tab) => {
+                  setActiveTab(tab);
+                  setIsMobileMenuOpen(false);
+                }}
+                onLogout={handleLogout}
+              />
             </div>
           </div>
         )}
@@ -101,19 +129,19 @@ export default function App() {
           <div className="max-w-7xl mx-auto">
             {/* Header for Organizer Dashboard to show user info/logout */}
             <div className="flex justify-end mb-6">
-               <div className="flex items-center space-x-4">
-                  <span className="text-sm font-medium text-gray-600">
-                    Welcome, {user?.name}
-                  </span>
-                  <button 
-                    onClick={handleLogout}
-                    className="text-sm text-red-600 hover:text-red-700 font-medium"
-                  >
-                    Sign Out
-                  </button>
-               </div>
+              <div className="flex items-center space-x-4">
+                <span className="text-sm font-medium text-gray-600">
+                  Welcome, {user?.name}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="text-sm text-red-600 hover:text-red-700 font-medium"
+                >
+                  Sign Out
+                </button>
+              </div>
             </div>
-            
+
             {renderOrganizerContent()}
           </div>
         </main>

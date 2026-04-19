@@ -56,7 +56,7 @@ const delay = (ms: number) =>
     setTimeout(resolve, ms);
   });
 
-const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
+const safeJsonParse = <T>(value: string | null, fallback: T): T => {
   if (!value) {
     return fallback;
   }
@@ -69,7 +69,10 @@ const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
 };
 
 const readCustomUsers = (): StoredMockUser[] => {
-  return safeJsonParse<StoredMockUser[]>(localStorage.getItem(USER_STORAGE_KEY), []);
+  return safeJsonParse<StoredMockUser[]>(
+    localStorage.getItem(USER_STORAGE_KEY),
+    [],
+  );
 };
 
 const writeCustomUsers = (users: StoredMockUser[]) => {
@@ -77,7 +80,10 @@ const writeCustomUsers = (users: StoredMockUser[]) => {
 };
 
 const readSession = (): AuthSession | null => {
-  return safeJsonParse<AuthSession | null>(localStorage.getItem(SESSION_STORAGE_KEY), null);
+  return safeJsonParse<AuthSession | null>(
+    localStorage.getItem(SESSION_STORAGE_KEY),
+    null,
+  );
 };
 
 const writeSession = (session: AuthSession) => {
@@ -132,7 +138,9 @@ export const authService = {
 
     const email = input.email.trim().toLowerCase();
     const users = allUsers();
-    const existing = users.find((candidate) => candidate.email.toLowerCase() === email);
+    const existing = users.find(
+      (candidate) => candidate.email.toLowerCase() === email,
+    );
 
     if (existing) {
       throw new Error("An account with this email already exists.");

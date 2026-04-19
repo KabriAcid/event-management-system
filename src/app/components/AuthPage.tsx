@@ -1,9 +1,19 @@
-
 import { useState } from "react";
-import { User, Calendar, ArrowLeft, Mail, Lock, UserCircle } from "lucide-react";
+import {
+  User,
+  Calendar,
+  ArrowLeft,
+  Mail,
+  Lock,
+  UserCircle,
+} from "lucide-react";
 import clsx from "clsx";
 import { toast } from "sonner";
-import { authService, type AuthUser, type UserRole } from "../services/authService";
+import {
+  authService,
+  type AuthUser,
+  type UserRole,
+} from "../services/authService";
 
 interface AuthPageProps {
   onLogin: (user: AuthUser) => void;
@@ -40,7 +50,9 @@ export function AuthPage({ onLogin, onBack }: AuthPageProps) {
       }
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Unable to authenticate. Please try again.";
+        error instanceof Error
+          ? error.message
+          : "Unable to authenticate. Please try again.";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -51,7 +63,7 @@ export function AuthPage({ onLogin, onBack }: AuthPageProps) {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-           <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center">
+          <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center">
             <Calendar className="text-white w-7 h-7" />
           </div>
         </div>
@@ -60,7 +72,10 @@ export function AuthPage({ onLogin, onBack }: AuthPageProps) {
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           Or{" "}
-          <button onClick={() => setIsLogin(!isLogin)} className="font-medium text-indigo-600 hover:text-indigo-500">
+          <button
+            onClick={() => setIsLogin(!isLogin)}
+            className="font-medium text-indigo-600 hover:text-indigo-500"
+          >
             {isLogin ? "start your journey" : "sign in to existing account"}
           </button>
         </p>
@@ -70,20 +85,24 @@ export function AuthPage({ onLogin, onBack }: AuthPageProps) {
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-100">
           <div className="flex space-x-2 mb-6 bg-gray-100 p-1 rounded-lg">
             <button
-              onClick={() => setRole('organizer')}
+              onClick={() => setRole("organizer")}
               className={clsx(
                 "flex-1 flex items-center justify-center py-2 text-sm font-medium rounded-md transition-all",
-                role === 'organizer' ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                role === "organizer"
+                  ? "bg-white text-indigo-600 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700",
               )}
             >
               <Calendar className="w-4 h-4 mr-2" />
               Organizer
             </button>
             <button
-              onClick={() => setRole('attendee')}
+              onClick={() => setRole("attendee")}
               className={clsx(
                 "flex-1 flex items-center justify-center py-2 text-sm font-medium rounded-md transition-all",
-                role === 'attendee' ? "bg-white text-indigo-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                role === "attendee"
+                  ? "bg-white text-indigo-600 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700",
               )}
             >
               <UserCircle className="w-4 h-4 mr-2" />
@@ -94,7 +113,9 @@ export function AuthPage({ onLogin, onBack }: AuthPageProps) {
           <form className="space-y-6" onSubmit={handleSubmit}>
             {!isLogin && (
               <div>
-                <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Full Name
+                </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <User className="h-5 w-5 text-gray-400" />
@@ -113,7 +134,9 @@ export function AuthPage({ onLogin, onBack }: AuthPageProps) {
             )}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Email address</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Email address
+              </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Mail className="h-5 w-5 text-gray-400" />
@@ -130,7 +153,9 @@ export function AuthPage({ onLogin, onBack }: AuthPageProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">Password</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Password
+              </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-400" />
@@ -153,7 +178,11 @@ export function AuthPage({ onLogin, onBack }: AuthPageProps) {
                 disabled={isSubmitting}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
               >
-                {isSubmitting ? "Please wait..." : isLogin ? "Sign in" : "Create account"}
+                {isSubmitting
+                  ? "Please wait..."
+                  : isLogin
+                    ? "Sign in"
+                    : "Create account"}
               </button>
             </div>
           </form>
