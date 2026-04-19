@@ -6,6 +6,8 @@ import {
   Ticket,
   LogOut,
   CheckCircle,
+  X,
+  Download,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import clsx from "clsx";
@@ -13,6 +15,7 @@ import { toast } from "sonner";
 import { ticketService } from "../services/ticketService";
 import { type AuthUser } from "../services/authService";
 import { eventService, type AppEvent } from "../services/eventService";
+import { attendeeService } from "../services/attendeeService";
 
 interface AttendeeDashboardProps {
   user: AuthUser;
@@ -34,7 +37,76 @@ export function AttendeeDashboard({
   const [likedEvents, setLikedEvents] = useState<string[]>([]);
   const [events, setEvents] = useState<AppEvent[]>([]);
   const [myTickets, setMyTickets] = useState<AppEvent[]>([]);
+  const [selectedTicket, setSelectedTicket] = useState<AppEvent | null>(null);
   const activeTab = controlledTab ?? internalTab;
+
+  const getTicketCode = (event: AppEvent) => {
+    const shortUser = user.id.slice(-4).toUpperCase();
+    return `EVF-${shortUser}-${event.id.toUpperCase()}`;
+  };
+
+  const toCalendarDate = (event: AppEvent) => {
+    const datePart = event.date;
+    const timePart = event.time;
+
+    const twelveHourMatch = timePart.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
+    if (twelveHourMatch) {
+      const [, h, m, meridian] = twelveHourMatch;
+      let hours = Number(h);
+
+      if (meridian.toUpperCase() === "PM" && hours < 12) {
+        hours += 12;
+      }
+      if (meridian.toUpperCase() === "AM" && hours === 12) {
+        hours = 0;
+      }
+
+      return new Date(`${datePart}T${String(hours).padStart(2, "0")}:${m}:00`);
+    }
+
+    return new Date(`${datePart}T${timePart.length === 5 ? `${timePart}:00` : timePart}`);
+  };
+
+  const formatIcsUtc = (date: Date) => {
+    return date.toISOString().replace(/[-:]/g, "").replace(".000", "");
+  };
+
+  const handleAddToCalendar = (event: AppEvent) => {
+    const start = toCalendarDate(event);
+
+    if (Number.isNaN(start.getTime())) {
+      toast.error("Unable to generate calendar entry for this event.");
+      return;
+    }
+
+    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+    const uid = `${event.id}-${user.id}@eventflow.local`;
+    const ics = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//EventFlow//Event Ticket//EN",
+      "CALSCALE:GREGORIAN",
+      "BEGIN:VEVENT",
+      `UID:${uid}`,
+      `DTSTAMP:${formatIcsUtc(new Date())}`,
+      `DTSTART:${formatIcsUtc(start)}`,
+      `DTEND:${formatIcsUtc(end)}`,
+      `SUMMARY:${event.title}`,
+      `LOCATION:${event.location}`,
+      `DESCRIPTION:${event.description.replace(/\n/g, " ")}`,
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\n");
+
+    const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${event.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.ics`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success("Calendar file downloaded.");
+  };
 
   const switchTab = (tab: "discover" | "tickets") => {
     if (onTabChange) {
@@ -51,10 +123,14 @@ export function AttendeeDashboard({
 
   useEffect(() => {
     const purchasedEventIds = ticketService.getPurchasedEventIds(user.id);
-    const purchasedEvents = eventService.getAllEvents().filter((event) =>
-      purchasedEventIds.includes(event.id),
-    );
+    const purchasedEvents = eventService
+      .getAllEvents()
+      .filter((event) => purchasedEventIds.includes(event.id));
     setMyTickets(purchasedEvents);
+  }, [user.id]);
+
+  useEffect(() => {
+    setLikedEvents(ticketService.getFavoriteEventIds(user.id));
   }, [user.id]);
 
   const filteredEvents = events.filter(
@@ -65,12 +141,13 @@ export function AttendeeDashboard({
   );
 
   const toggleLike = (id: string) => {
-    if (likedEvents.includes(id)) {
-      setLikedEvents(likedEvents.filter((e) => e !== id));
-      toast("Removed from favorites");
-    } else {
-      setLikedEvents([...likedEvents, id]);
+    const nextLikedEvents = ticketService.toggleFavoriteEventId(user.id, id);
+    setLikedEvents(nextLikedEvents);
+
+    if (nextLikedEvents.includes(id)) {
       toast("Added to favorites");
+    } else {
+      toast("Removed from favorites");
     }
   };
 
@@ -89,9 +166,15 @@ export function AttendeeDashboard({
           user.id,
           event.id,
         );
-        const purchasedEvents = eventService.getAllEvents().filter((candidate) =>
-          purchasedIds.includes(candidate.id),
-        );
+        attendeeService.registerTicketPurchase({
+          name: user.name,
+          email: user.email,
+          event: event.title,
+          date: new Date().toISOString().slice(0, 10),
+        });
+        const purchasedEvents = eventService
+          .getAllEvents()
+          .filter((candidate) => purchasedIds.includes(candidate.id));
         setMyTickets(purchasedEvents);
         return `Successfully registered for ${event.title}!`;
       },
@@ -345,11 +428,17 @@ export function AttendeeDashboard({
                         </span>
                       </div>
                       <div className="mt-6 flex gap-3">
-                        <button className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm">
+                        <button
+                          onClick={() => setSelectedTicket(event)}
+                          className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+                        >
                           <Ticket className="w-4 h-4 mr-2" />
                           View Ticket
                         </button>
-                        <button className="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
+                        <button
+                          onClick={() => handleAddToCalendar(event)}
+                          className="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                        >
                           Add to Calendar
                         </button>
                       </div>
@@ -361,6 +450,82 @@ export function AttendeeDashboard({
           </div>
         )}
       </main>
+
+      {selectedTicket && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setSelectedTicket(null)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 className="font-bold text-lg text-gray-900">Your Ticket</h3>
+              <button
+                onClick={() => setSelectedTicket(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5">
+              <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-4">
+                <p className="text-xs text-indigo-700 font-medium uppercase tracking-wide">
+                  Ticket ID
+                </p>
+                <p className="text-lg font-bold text-indigo-900 mt-1">
+                  {getTicketCode(selectedTicket)}
+                </p>
+              </div>
+
+              <div>
+                <h4 className="text-2xl font-bold text-gray-900">{selectedTicket.title}</h4>
+                <p className="text-sm text-gray-500 mt-1">
+                  Holder: {user.name} ({user.email})
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <div className="rounded-lg border border-gray-200 p-3">
+                  <p className="text-gray-500">Date & Time</p>
+                  <p className="font-medium text-gray-900 mt-1">
+                    {selectedTicket.date} at {selectedTicket.time}
+                  </p>
+                </div>
+                <div className="rounded-lg border border-gray-200 p-3">
+                  <p className="text-gray-500">Location</p>
+                  <p className="font-medium text-gray-900 mt-1">{selectedTicket.location}</p>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-dashed border-gray-300 p-5 text-center">
+                <div className="mx-auto w-36 h-36 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500">
+                  QR Placeholder
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Present this ticket at check-in.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => handleAddToCalendar(selectedTicket)}
+                  className="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors inline-flex items-center"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Add to Calendar
+                </button>
+                <button
+                  onClick={() => setSelectedTicket(null)}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

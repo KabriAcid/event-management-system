@@ -25,6 +25,13 @@ interface CreateAttendeeInput {
 
 type UpdateAttendeeInput = Partial<CreateAttendeeInput>;
 
+interface RegisterTicketPurchaseInput {
+  name: string;
+  email: string;
+  event: string;
+  date: string;
+}
+
 const ATTENDEE_STORAGE_KEY = "eventflow.mock.attendees";
 
 const safeParseAttendees = (value: string | null): AppAttendee[] => {
@@ -126,6 +133,39 @@ export const attendeeService = {
 
     writeAttendees(nextAttendees);
     return nextAttendees;
+  },
+
+  registerTicketPurchase(input: RegisterTicketPurchaseInput): AppAttendee[] {
+    const attendees = readAttendees();
+    const normalizedEmail = input.email.trim().toLowerCase();
+    const normalizedEvent = input.event.trim().toLowerCase();
+
+    const existingIndex = attendees.findIndex(
+      (attendee) =>
+        attendee.email.trim().toLowerCase() === normalizedEmail &&
+        attendee.event.trim().toLowerCase() === normalizedEvent,
+    );
+
+    if (existingIndex >= 0) {
+      const nextAttendees = [...attendees];
+      nextAttendees[existingIndex] = {
+        ...nextAttendees[existingIndex],
+        name: input.name.trim(),
+        status: "Confirmed",
+        date: input.date,
+      };
+
+      writeAttendees(nextAttendees);
+      return nextAttendees;
+    }
+
+    return this.createAttendee({
+      name: input.name,
+      email: normalizedEmail,
+      event: input.event,
+      status: "Confirmed",
+      date: input.date,
+    });
   },
 
   removeAttendee(id: number): AppAttendee[] {

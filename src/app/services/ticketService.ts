@@ -1,7 +1,12 @@
 const TICKET_STORAGE_PREFIX = "eventflow.mock.tickets";
+const FAVORITE_STORAGE_PREFIX = "eventflow.mock.favorites";
 
 const storageKeyForUser = (userId: string) => {
   return `${TICKET_STORAGE_PREFIX}.${userId}`;
+};
+
+const favoriteKeyForUser = (userId: string) => {
+  return `${FAVORITE_STORAGE_PREFIX}.${userId}`;
 };
 
 const safeParseIds = (value: string | null): string[] => {
@@ -53,6 +58,27 @@ export const ticketService = {
   addPurchasedEventId(userId: string, eventId: string): string[] {
     const nextIds = uniqueIds([...this.getPurchasedEventIds(userId), eventId]);
     this.savePurchasedEventIds(userId, nextIds);
+    return nextIds;
+  },
+
+  getFavoriteEventIds(userId: string): string[] {
+    const key = favoriteKeyForUser(userId);
+    return safeParseIds(localStorage.getItem(key));
+  },
+
+  saveFavoriteEventIds(userId: string, eventIds: string[]) {
+    const key = favoriteKeyForUser(userId);
+    localStorage.setItem(key, JSON.stringify(uniqueIds(eventIds)));
+  },
+
+  toggleFavoriteEventId(userId: string, eventId: string): string[] {
+    const favorites = this.getFavoriteEventIds(userId);
+
+    const nextIds = favorites.includes(eventId)
+      ? favorites.filter((id) => id !== eventId)
+      : [...favorites, eventId];
+
+    this.saveFavoriteEventIds(userId, nextIds);
     return nextIds;
   },
 };
