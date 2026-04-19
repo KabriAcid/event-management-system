@@ -17,6 +17,28 @@ export interface AuthSession {
   expiresAt: number;
 }
 
+export type AuthErrorCode =
+  | "ACCOUNT_NOT_FOUND"
+  | "INVALID_PASSWORD"
+  | "ROLE_MISMATCH"
+  | "ACCOUNT_EXISTS";
+
+export class AuthServiceError extends Error {
+  code: AuthErrorCode;
+  data?: Record<string, string>;
+
+  constructor(
+    code: AuthErrorCode,
+    message: string,
+    data?: Record<string, string>,
+  ) {
+    super(message);
+    this.name = "AuthServiceError";
+    this.code = code;
+    this.data = data;
+  }
+}
+
 interface LoginInput {
   email: string;
   password: string;
@@ -119,18 +141,30 @@ export const authService = {
     await delay(800);
 
     const email = input.email.trim().toLowerCase();
-    const user = allUsers().find(
-      (candidate) =>
-        candidate.email.toLowerCase() === email &&
-        candidate.password === input.password &&
-        candidate.role === input.role,
+    const userByEmail = allUsers().find(
+      (candidate) => candidate.email.toLowerCase() === email,
     );
 
-    if (!user) {
-      throw new Error("Invalid credentials for selected role.");
+    if (!userByEmail) {
+      throw new AuthServiceError(
+        "ACCOUNT_NOT_FOUND",
+        "No account found for this email.",
+      );
     }
 
-    return createSession(toPublicUser(user));
+    if (userByEmail.password !== input.password) {
+      throw new AuthServiceError("INVALID_PASSWORD", "Incorrect password.");
+    }
+
+    if (userByEmail.role !== input.role) {
+      throw new AuthServiceError(
+        "ROLE_MISMATCH",
+        `This account is registered as ${userByEmail.role}.`,
+        { expectedRole: userByEmail.role },
+      );
+    }
+
+    return createSession(toPublicUser(userByEmail));
   },
 
   async register(input: RegisterInput): Promise<AuthSession> {
@@ -143,7 +177,10 @@ export const authService = {
     );
 
     if (existing) {
-      throw new Error("An account with this email already exists.");
+      throw new AuthServiceError(
+        "ACCOUNT_EXISTS",
+        "An account with this email already exists.",
+      );
     }
 
     const newUser: StoredMockUser = {
@@ -177,5 +214,19 @@ export const authService = {
 
   logout() {
     localStorage.removeItem(SESSION_STORAGE_KEY);
+  },
+
+  getAccountRoleByEmail(email: string): UserRole | null {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      return null;
+    }
+
+    const user = allUsers().find(
+      (candidate) => candidate.email.toLowerCase() === normalizedEmail,
+    );
+
+    return user?.role ?? null;
   },
 };

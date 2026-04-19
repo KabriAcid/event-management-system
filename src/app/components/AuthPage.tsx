@@ -11,6 +11,7 @@ import clsx from "clsx";
 import { toast } from "sonner";
 import {
   authService,
+  AuthServiceError,
   type AuthUser,
   type UserRole,
 } from "../services/authService";
@@ -27,6 +28,18 @@ export function AuthPage({ onLogin, onBack }: AuthPageProps) {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const suggestRoleFromEmail = (nextEmail: string) => {
+    if (!isLogin) {
+      return;
+    }
+
+    const detectedRole = authService.getAccountRoleByEmail(nextEmail);
+
+    if (detectedRole && detectedRole !== role) {
+      setRole(detectedRole);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,10 +62,20 @@ export function AuthPage({ onLogin, onBack }: AuthPageProps) {
         onLogin(session.user);
       }
     } catch (error) {
-      const message =
+      let message =
         error instanceof Error
           ? error.message
           : "Unable to authenticate. Please try again.";
+
+      if (error instanceof AuthServiceError && error.code === "ROLE_MISMATCH") {
+        const expectedRole = error.data?.expectedRole as UserRole | undefined;
+
+        if (expectedRole) {
+          setRole(expectedRole);
+          message = `${error.message} Switched role to ${expectedRole}.`;
+        }
+      }
+
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -147,7 +170,11 @@ export function AuthPage({ onLogin, onBack }: AuthPageProps) {
                   className="block w-full pl-10 sm:text-sm border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 py-2 border"
                   placeholder="you@example.com"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    const nextEmail = e.target.value;
+                    setEmail(nextEmail);
+                    suggestRoleFromEmail(nextEmail);
+                  }}
                 />
               </div>
             </div>
