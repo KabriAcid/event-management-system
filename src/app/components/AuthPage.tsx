@@ -214,13 +214,13 @@ export function AuthPage({ onLogin, onBack }: AuthPageProps) {
             </div>
           </form>
 
-          {isLogin && (
+          {/* {isLogin && (
             <div className="mt-4 rounded-md bg-indigo-50 border border-indigo-100 p-3 text-xs text-indigo-900">
               <p className="font-semibold">Demo login credentials</p>
               <p>Organizer: organizer@eventflow.demo / demo123</p>
               <p>Attendee: attendee@eventflow.demo / demo123</p>
             </div>
-          )}
+          )} */}
 
           <div className="mt-6">
             <button

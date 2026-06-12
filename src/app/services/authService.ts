@@ -67,7 +67,7 @@ const DEFAULT_USERS: StoredMockUser[] = [
   },
   {
     id: "u-att-001",
-    name: "Happy Attendee",
+    name: "Sahabo Sahabi",
     email: "attendee@eventflow.demo",
     password: "demo123",
     role: "attendee",

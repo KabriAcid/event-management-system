@@ -1,11 +1,8 @@
 import {
   Search,
   Calendar,
-  MapPin,
-  Heart,
   Ticket,
   LogOut,
-  CheckCircle,
   X,
   Download,
 } from "lucide-react";
@@ -16,6 +13,10 @@ import { ticketService, type TicketMeta } from "../services/ticketService";
 import { type AuthUser } from "../services/authService";
 import { eventService, type AppEvent } from "../services/eventService";
 import { attendeeService } from "../services/attendeeService";
+// New imports
+import { EventCard } from "./EventCard";
+import { TicketCard } from "./TicketCard";
+import { MonnifyPaymentModal } from "./MonnifyPaymentModal";
 
 interface AttendeeDashboardProps {
   user: AuthUser;
@@ -40,6 +41,10 @@ export function AttendeeDashboard({
   const [selectedTicket, setSelectedTicket] = useState<AppEvent | null>(null);
   const [ticketMeta, setTicketMeta] = useState<TicketMeta[]>([]);
   const activeTab = controlledTab ?? internalTab;
+  
+  // Monnify state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedEventForPayment, setSelectedEventForPayment] = useState<AppEvent | null>(null);
 
   const getTicketCode = (event: AppEvent) => {
     const meta = ticketMeta.find((item) => item.eventId === event.id);
@@ -165,48 +170,56 @@ export function AttendeeDashboard({
     setLikedEvents(nextLikedEvents);
 
     if (nextLikedEvents.includes(id)) {
-      toast("Added to favorites");
+      toast.success("Added to favorites");
     } else {
-      toast("Removed from favorites");
+      toast.info("Removed from favorites");
     }
   };
 
+  // NEW: Handle buy ticket - opens payment modal
   const handleBuyTicket = (event: AppEvent) => {
     if (myTickets.some((t) => t.id === event.id)) {
       toast.error("You already have a ticket for this event!");
       switchTab("tickets");
       return;
     }
+    
+    // Open payment modal instead of mock payment
+    setSelectedEventForPayment(event);
+    setShowPaymentModal(true);
+  };
 
-    // Simulate API call
-    toast.promise(new Promise((resolve) => setTimeout(resolve, 1000)), {
-      loading: "Processing payment...",
-      success: () => {
-        const nextTicketCode = `EVF-${user.id.slice(-4).toUpperCase()}-${event.id.toUpperCase()}`;
-        const purchasedIds = ticketService.addPurchasedEventId(
-          user.id,
-          event.id,
-        );
-        const nextMeta = ticketService.upsertTicketMeta(
-          user.id,
-          event.id,
-          nextTicketCode,
-        );
-        attendeeService.registerTicketPurchase({
-          name: user.name,
-          email: user.email,
-          event: event.title,
-          date: new Date().toISOString().slice(0, 10),
-        });
-        const purchasedEvents = eventService
-          .getAllEvents()
-          .filter((candidate) => purchasedIds.includes(candidate.id));
-        setMyTickets(purchasedEvents);
-        setTicketMeta(nextMeta);
-        return `Successfully registered for ${event.title}!`;
-      },
-      error: "Failed to book ticket",
+  // NEW: Handle successful payment
+  const handlePaymentSuccess = (response: any) => {
+    if (!selectedEventForPayment) return;
+    
+    const event = selectedEventForPayment;
+    const ticketCode = `EVF-${user.id.slice(-4).toUpperCase()}-${event.id.toUpperCase()}`;
+    const purchasedIds = ticketService.addPurchasedEventId(user.id, event.id);
+    ticketService.upsertTicketMeta(user.id, event.id, ticketCode);
+    
+    attendeeService.registerTicketPurchase({
+      name: user.name,
+      email: user.email,
+      event: event.title,
+      date: new Date().toISOString().slice(0, 10),
     });
+    
+    const purchasedEvents = eventService
+      .getAllEvents()
+      .filter((candidate) => purchasedIds.includes(candidate.id));
+    setMyTickets(purchasedEvents);
+    
+    toast.success(`Payment successful! 🎉 Ticket issued for ${event.title}`);
+    setShowPaymentModal(false);
+    setSelectedEventForPayment(null);
+    switchTab("tickets");
+  };
+
+  // NEW: Handle modal close without payment
+  const handleModalClose = () => {
+    setShowPaymentModal(false);
+    setSelectedEventForPayment(null);
   };
 
   const handleCancelTicket = (event: AppEvent) => {
@@ -328,83 +341,21 @@ export function AttendeeDashboard({
               </div>
             </div>
 
-            {/* Event Grid */}
+            {/* Event Grid - Using Componentized EventCard */}
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-6">
                 Trending Events
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredEvents.map((event) => (
-                  <div
+                  <EventCard
                     key={event.id}
-                    className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow group flex flex-col h-full"
-                  >
-                    <div className="relative h-48 overflow-hidden">
-                      <img
-                        src={event.image}
-                        alt={event.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <button
-                        onClick={() => toggleLike(event.id)}
-                        className="absolute top-3 right-3 p-2 rounded-full bg-white/90 hover:bg-white shadow-sm transition-colors z-10"
-                      >
-                        <Heart
-                          className={clsx(
-                            "w-4 h-4",
-                            likedEvents.includes(event.id)
-                              ? "fill-red-500 text-red-500"
-                              : "text-gray-400",
-                          )}
-                        />
-                      </button>
-                      <div className="absolute top-3 left-3 px-2 py-1 rounded text-xs font-semibold text-gray-900 bg-white/90 shadow-sm">
-                        ₦{event.price}
-                      </div>
-                    </div>
-
-                    <div className="p-5 flex-1 flex flex-col">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-medium border border-indigo-100">
-                          {event.category}
-                        </span>
-                      </div>
-
-                      <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-1">
-                        {event.title}
-                      </h3>
-                      <p className="text-gray-500 text-sm mb-4 line-clamp-2">
-                        {event.description}
-                      </p>
-
-                      <div className="mt-auto space-y-2 text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-400" />
-                          <span>
-                            {event.date} • {event.time}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-gray-400" />
-                          <span className="truncate">{event.location}</span>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleBuyTicket(event)}
-                        className={clsx(
-                          "w-full mt-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                          myTickets.some((t) => t.id === event.id)
-                            ? "bg-green-50 text-green-700 border border-green-200 cursor-default"
-                            : "bg-gray-900 text-white hover:bg-gray-800",
-                        )}
-                      >
-                        {myTickets.some((t) => t.id === event.id)
-                          ? "Ticket Purchased"
-                          : "Get Tickets"}
-                      </button>
-                    </div>
-                  </div>
+                    event={event}
+                    isLiked={likedEvents.includes(event.id)}
+                    isTicketPurchased={myTickets.some((t) => t.id === event.id)}
+                    onLike={toggleLike}
+                    onBuyTicket={handleBuyTicket}
+                  />
                 ))}
               </div>
 
@@ -445,60 +396,13 @@ export function AttendeeDashboard({
             ) : (
               <div className="space-y-4">
                 {myTickets.map((event) => (
-                  <div
+                  <TicketCard
                     key={event.id}
-                    className="bg-white p-4 md:p-6 rounded-xl border border-gray-100 shadow-sm flex flex-col md:flex-row gap-6 hover:shadow-md transition-shadow"
-                  >
-                    <div className="w-full md:w-48 h-32 rounded-lg overflow-hidden flex-shrink-0">
-                      <img
-                        src={event.image}
-                        alt={event.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-xl font-bold text-gray-900">
-                            {event.title}
-                          </h3>
-                          <div className="flex items-center text-gray-500 text-sm mt-1">
-                            <Calendar className="w-4 h-4 mr-1.5" />
-                            {event.date} at {event.time}
-                          </div>
-                          <div className="flex items-center text-gray-500 text-sm mt-1">
-                            <MapPin className="w-4 h-4 mr-1.5" />
-                            {event.location}
-                          </div>
-                        </div>
-                        <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full uppercase tracking-wide flex items-center">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Confirmed
-                        </span>
-                      </div>
-                      <div className="mt-6 flex gap-3">
-                        <button
-                          onClick={() => setSelectedTicket(event)}
-                          className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
-                        >
-                          <Ticket className="w-4 h-4 mr-2" />
-                          View Ticket
-                        </button>
-                        <button
-                          onClick={() => handleAddToCalendar(event)}
-                          className="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
-                        >
-                          Add to Calendar
-                        </button>
-                        <button
-                          onClick={() => handleCancelTicket(event)}
-                          className="px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
-                        >
-                          Cancel Ticket
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                    event={event}
+                    onViewTicket={setSelectedTicket}
+                    onAddToCalendar={handleAddToCalendar}
+                    onCancelTicket={handleCancelTicket}
+                  />
                 ))}
               </div>
             )}
@@ -506,6 +410,7 @@ export function AttendeeDashboard({
         )}
       </main>
 
+      {/* Ticket Detail Modal */}
       {selectedTicket && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -587,7 +492,10 @@ export function AttendeeDashboard({
                   Close
                 </button>
                 <button
-                  onClick={() => handleCancelTicket(selectedTicket)}
+                  onClick={() => {
+                    handleCancelTicket(selectedTicket);
+                    setSelectedTicket(null);
+                  }}
                   className="px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
                 >
                   Cancel Ticket
@@ -596,6 +504,20 @@ export function AttendeeDashboard({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Monnify Payment Modal */}
+      {showPaymentModal && selectedEventForPayment && (
+        <MonnifyPaymentModal
+          isOpen={showPaymentModal}
+          onClose={handleModalClose}
+          onSuccess={handlePaymentSuccess}
+          amount={selectedEventForPayment.price}
+          email={user.email}
+          name={user.name}
+          eventId={selectedEventForPayment.id}
+          eventTitle={selectedEventForPayment.title}
+        />
       )}
     </div>
   );

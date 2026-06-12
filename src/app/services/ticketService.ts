@@ -1,3 +1,5 @@
+// app/services/ticketService.ts
+
 const TICKET_STORAGE_PREFIX = "eventflow.mock.tickets";
 const FAVORITE_STORAGE_PREFIX = "eventflow.mock.favorites";
 const TICKET_META_STORAGE_PREFIX = "eventflow.mock.ticketmeta";
@@ -70,19 +72,8 @@ export const ticketService = {
   getPurchasedEventIds(userId: string): string[] {
     const key = storageKeyForUser(userId);
     const ids = safeParseIds(localStorage.getItem(key));
-
-    if (ids.length > 0) {
-      return ids;
-    }
-
-    // Provide a richer first-run demo for the seeded attendee user.
-    if (userId === "u-att-001") {
-      const seededIds = ["1", "2"];
-      this.savePurchasedEventIds(userId, seededIds);
-      return seededIds;
-    }
-
-    return [];
+    
+    return ids;
   },
 
   savePurchasedEventIds(userId: string, eventIds: string[]) {
