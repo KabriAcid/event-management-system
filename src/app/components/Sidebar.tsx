@@ -5,12 +5,13 @@ import {
   Settings,
   LogOut,
   PlusCircle,
+  Ticket
 } from "lucide-react";
 import clsx from "clsx";
 import { Link } from "react-router-dom";
 
 interface SidebarProps {
-  activeTab: "dashboard" | "events" | "attendees" | "settings";
+  activeTab: "dashboard" | "events" | "attendees" | "tickets" | "settings";
   onNavigate?: () => void;
   onLogout?: () => void;
 }
@@ -34,6 +35,13 @@ export function Sidebar({ activeTab, onNavigate, onLogout }: SidebarProps) {
       label: "Attendees",
       icon: Users,
       href: "/organizer/attendees",
+    },
+    // tickets
+    {
+      id: "tickets",
+      label: "Tickets",
+      icon: Ticket,
+      href: "/organizer/tickets",
     },
     {
       id: "settings",

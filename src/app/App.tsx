@@ -15,12 +15,13 @@ import { Settings } from "./components/Settings";
 import { LandingPage } from "./components/LandingPage";
 import { AuthPage } from "./components/AuthPage";
 import { AttendeeDashboard } from "./components/AttendeeDashboard";
+import { OrganizerTickets } from "./components/OrganizerTickets";
 import { CreateEventPage } from "./components/CreateEventPage";
 import { Menu, Calendar } from "lucide-react";
 import { Toaster } from "sonner";
 import { authService, type AuthUser } from "./services/authService";
 
-type OrganizerTab = "dashboard" | "events" | "attendees" | "settings";
+type OrganizerTab = "dashboard" | "events" | "attendees" | "tickets" | "settings";
 
 const defaultPathByRole: Record<AuthUser["role"], string> = {
   organizer: "/organizer/dashboard",
@@ -35,7 +36,9 @@ function getOrganizerTab(pathname: string): OrganizerTab {
   if (pathname.includes("/attendees")) {
     return "attendees";
   }
-
+  if (pathname.includes("/tickets")) {
+    return "tickets";
+  }
   if (pathname.includes("/settings")) {
     return "settings";
   }
@@ -236,6 +239,7 @@ export default function App() {
           <Route path="events" element={<EventList />} />
           <Route path="events/create" element={<CreateEventPage />} />
           <Route path="attendees" element={<Attendees />} />
+          <Route path="tickets" element={<OrganizerTickets />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 
