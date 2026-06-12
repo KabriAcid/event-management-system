@@ -201,6 +201,7 @@ export function AuthPage({ onLogin, onBack }: AuthPageProps) {
                   </div>
                   <input
                     type="text"
+                    name="name"
                     required
                     minLength={2}
                     className="block w-full pl-10 pr-3 py-2.5 sm:text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
