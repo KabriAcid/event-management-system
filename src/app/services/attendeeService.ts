@@ -201,6 +201,33 @@ export const attendeeService = {
     return nextAttendees;
   },
 
+  registerNewUser(name: string, email: string): AppAttendee[] {
+  const attendees = readAttendees();
+  
+  // Check if user already exists as attendee
+  const existing = attendees.some(
+    (attendee) => attendee.email.toLowerCase() === email.toLowerCase()
+  );
+  
+  if (existing) {
+    return attendees;
+  }
+  
+  // Create new attendee record
+  const newAttendee: AppAttendee = {
+    id: nextAttendeeId(attendees),
+    name: name.trim(),
+    email: email.toLowerCase(),
+    event: "No events yet", // Default until they purchase tickets
+    status: "Pending",
+    date: new Date().toISOString().slice(0, 10),
+  };
+  
+  const nextAttendees = [newAttendee, ...attendees];
+  writeAttendees(nextAttendees);
+  return nextAttendees;
+},
+
   exportCsv(attendees: AppAttendee[]): string {
     const headers = ["Name", "Email", "Event", "Status", "Date"];
     const rows = attendees.map((attendee) => [

@@ -1,3 +1,7 @@
+// app/services/authService.ts
+
+import { attendeeService } from "./attendeeService";
+
 export type UserRole = "organizer" | "attendee";
 
 export interface AuthUser {
@@ -222,6 +226,11 @@ export const authService = {
     const customUsers = readCustomUsers();
     writeCustomUsers([...customUsers, newUser]);
 
+    // NEW: If registering as attendee, add to attendees list
+    if (input.role === "attendee") {
+      attendeeService.registerNewUser(input.name.trim(), email);
+    }
+
     return createSession(toPublicUser(newUser));
   },
 
@@ -256,6 +265,10 @@ export const authService = {
     );
 
     return user?.role ?? null;
+  },
+
+  getAllUsers(): AuthUser[] {
+    return allUsers().map(toPublicUser);
   },
 
   updateCurrentUserPassword(
