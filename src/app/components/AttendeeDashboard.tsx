@@ -468,23 +468,7 @@ export function AttendeeDashboard({
                 </div>
               </div>
 
-              <div className="rounded-lg border border-dashed border-gray-300 p-5 text-center">
-                <div className="mx-auto w-36 h-36 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-500">
-                  QR Placeholder
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Present this ticket at check-in.
-                </p>
-              </div>
-
               <div className="flex justify-end gap-2">
-                <button
-                  onClick={() => handleAddToCalendar(selectedTicket)}
-                  className="px-4 py-2 border border-gray-200 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors inline-flex items-center"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Add to Calendar
-                </button>
                 <button
                   onClick={() => setSelectedTicket(null)}
                   className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
